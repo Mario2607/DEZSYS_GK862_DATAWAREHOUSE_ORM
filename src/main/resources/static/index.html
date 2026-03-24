@@ -1,0 +1,54 @@
+<html>
+<head>
+    <title>Warehouse Consumer</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body>
+<h1>Warehouse Tabelle</h1>
+<label> Produktname: <input id="filterName" type="text"> </label>
+
+<table id="dataTable">
+    <thead>
+    <tr>
+        <th>Produkt ID</th>
+        <th>Produktname</th>
+        <th>Kategorie</th>
+        <th>Menge</th>
+        <th>Einheit</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+    let liste = [];
+    function table(filterText) {
+        let werte = "";
+        $.each(liste, function(_, p) {
+            if (!filterText || p.productName.includes(filterText)) {
+                werte += `<tr>
+                    <td>${p.productID}</td>
+                    <td>${p.productName}</td>
+                    <td>${p.productCategory}</td>
+                    <td>${p.productQuantity}</td>
+                    <td>${p.productUnit}</td>
+                </tr>`;
+            }
+        });
+        $("#dataTable tbody").html(werte);
+    }
+
+    $(document).ready(function() {
+        $.getJSON(`/warehouse/001/json`, function(data) {
+            liste = data.productData;
+            table("");
+        });
+
+        $("#filterName").on("input", function() {
+            let filter = $(this).val();
+            table(filter);
+        });
+    });
+</script>
+</body>
+</html>
