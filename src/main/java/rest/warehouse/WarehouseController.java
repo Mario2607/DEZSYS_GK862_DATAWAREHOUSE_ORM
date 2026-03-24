@@ -62,8 +62,8 @@ public class WarehouseController {
     }
 
     @PostMapping("/product/add/{warehouseId}/{productId}")
-    public String addProduct(@PathVariable Long warehouseId, @PathVariable String productId){
-        WarehouseData data = warehouseRepository.findById(warehouseId).orElse(null);
+    public String addProduct(@PathVariable String warehouseId, @PathVariable String productId){
+        WarehouseData data = warehouseRepository.findByWarehouseID(warehouseId).orElse(null);
         ProductData productData;
         switch (productId) {
             case "00-443175":
@@ -95,8 +95,8 @@ public class WarehouseController {
     }
 
     @GetMapping(value = "/warehouse/{id}", produces="application/json")
-    public WarehouseData getWarehouse(@PathVariable Long id){
-        return warehouseRepository.findById(id).orElse(null);
+    public WarehouseData getWarehouse(@PathVariable String id){
+        return warehouseRepository.findByWarehouseID(id).orElse(null);
     }
 
     @GetMapping(value="/product/all", produces="application/json")
@@ -104,15 +104,31 @@ public class WarehouseController {
         return productRepository.findAll();
     }
 
+    @GetMapping(value="/product/{warehouseID}/{productID}", produces="application/json")
+    public ProductData getProduct(@PathVariable String warehouseID, @PathVariable String productID){
+        return productRepository.findByWarehouseData_WarehouseIDAndProductID(warehouseID, productID).orElse(null);
+    }
+
     @DeleteMapping("/warehouse/delete/{id}")
-    public String deleteWarehouse(@PathVariable Long id){
-        warehouseRepository.deleteById(id);
+    public String deleteWarehouse(@PathVariable String id){
+        WarehouseData data = warehouseRepository.findByWarehouseID(id).orElse(null);
+        warehouseRepository.delete(data);
         return "Warehouse and its products deleted!";
     }
 
-    @DeleteMapping("/product/delete/{id}")
-    public String deleteProduct(@PathVariable Long id){
-        productRepository.deleteById(id);
+    @DeleteMapping("/product/delete/{warehouseID}/{productID}")
+    public String deleteProduct(@PathVariable String warehouseID, @PathVariable String productID){
+        ProductData product = productRepository.findByWarehouseData_WarehouseIDAndProductID(warehouseID, productID).orElse(null);
+        productRepository.delete(product);
         return "Product deleted!";
+    }
+
+    @PutMapping("/warehouse/update/{warehouseID}")
+    public String updateWarehouse(@PathVariable String warehouseID){
+        WarehouseData data = warehouseRepository.findByWarehouseID(warehouseID).orElse(null);
+        data.setWarehouseName("UPDATED NAME");
+        data.setWarehouseCity("UPDATED CITY");
+        warehouseRepository.save(data);
+        return "Warehouse updated!";
     }
 }
