@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.MediaType;
 import rest.model.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 @RestController
 @RequestMapping("/api")
@@ -17,6 +19,9 @@ public class WarehouseController {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private PurchasesRepository purchasesRepository;
 	
     @RequestMapping("/")
     public String warehouseMain() {
@@ -130,5 +135,34 @@ public class WarehouseController {
         data.setWarehouseCity("UPDATED CITY");
         warehouseRepository.save(data);
         return "Warehouse updated!";
+    }
+
+    @PostMapping("/purchase/add30")
+    public String createPurchases(){
+        WarehouseData w1 = warehouseRepository.findByWarehouseID("001").orElse(null);
+        WarehouseData w2 = warehouseRepository.findByWarehouseID("002").orElse(null);
+        ProductData p1 = productRepository.findByWarehouseData_WarehouseIDAndProductID("001","00-443175").orElse(null);
+        ProductData p2 = productRepository.findByWarehouseData_WarehouseIDAndProductID("002","00-871895").orElse(null);
+
+        for(int i = 0; i < 30; i++){
+            PurchasesData purchase = new PurchasesData(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date()), (int)(Math.random() * 10) + 1, (i % 2 == 0 ? p1 : p2), (i % 2 == 0 ? w1 : w2));
+            purchasesRepository.save(purchase);
+        }
+        return "30 purchases created!";
+    }
+
+    @GetMapping(value="/purchase/all", produces="application/json")
+    public Iterable<PurchasesData> getAllPurchases(){
+        Iterable<PurchasesData> list = purchasesRepository.findAll();
+        for(PurchasesData p : list){
+            p.getWarehouse().setProductData(null);
+        }
+        return list;
+    }
+
+    @DeleteMapping("/purchase/deleteAll")
+    public String deleteAllPurchases(){
+        purchasesRepository.deleteAll();
+        return "All purchases deleted!";
     }
 }
