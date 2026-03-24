@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.MediaType;
 import rest.model.*;
+import java.io.*;
+import java.net.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -164,5 +166,57 @@ public class WarehouseController {
     public String deleteAllPurchases(){
         purchasesRepository.deleteAll();
         return "All purchases deleted!";
+    }
+
+    @PostMapping("/purchase/add300")
+    public String createPurchases300(){
+        WarehouseData w1 = warehouseRepository.findByWarehouseID("001").orElse(null);
+        WarehouseData w2 = warehouseRepository.findByWarehouseID("002").orElse(null);
+        ProductData p1 = productRepository.findByWarehouseData_WarehouseIDAndProductID("001","00-443175").orElse(null);
+        ProductData p2 = productRepository.findByWarehouseData_WarehouseIDAndProductID("002","00-871895").orElse(null);
+
+        for(int i = 0; i < 300; i++){
+            PurchasesData purchase = new PurchasesData(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date()), (int)(Math.random() * 10) + 1, (i % 2 == 0 ? p1 : p2), (i % 2 == 0 ? w1 : w2));
+            purchasesRepository.save(purchase);
+        }
+        return "300 purchases created!";
+    }
+
+    @GetMapping("/prognosis")
+    public String prognosis() {
+        try {
+            Iterable<PurchasesData> purchases = purchasesRepository.findAll();
+            String data = "";
+            int count = 0;
+
+            for (PurchasesData p : purchases) {
+                if(count > 50) break;
+                if(p.getWarehouse() != null && p.getProduct() != null){
+                    data += "Warehouse " + p.getWarehouse().getWarehouseID() + " Product " + p.getProduct().getProductID() + " Amount " + p.getAmount() + "\n";
+                }
+                count++;
+            }
+
+            String prompt = "Here is sales data:\n" + data + "\nPredict sales for next month per warehouse and product. Give numbers.";
+            String safePrompt = prompt.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ");
+            String json = "{" + "\"model\":\"llama3\"," + "\"prompt\":\"" + safePrompt + "\"," + "\"stream\":false" + "}";
+            URL url = new URL("http://localhost:11434/api/generate");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.getOutputStream().write(json.getBytes());
+            BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+
+            String line, result = "";
+            while ((line = br.readLine()) != null) {
+                result += line;
+            }
+
+            return result.split("\"response\":\"")[1].split("\",\"done\"")[0];
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
     }
 }
